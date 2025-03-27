@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard - PropIntel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+        <div class="position-sticky">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Quick Navigation</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('properties') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-home me-2"></i> View All Properties
+                        </a>
+                        <a href="{{ url_for('map_view') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-map-marker-alt me-2"></i> View Property Map
+                        </a>
+                        <a href="{{ url_for('new_property') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus-circle me-2"></i> Add New Property
+                        </a>
+                        <a href="{{ url_for('upload_file') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-upload me-2"></i> Upload Data
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Recent Properties</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for property in recent_properties %}
+                        <a href="{{ url_for('property_detail', property_id=property[0]) }}" class="list-group-item list-group-item-action">
+                            {{ property[1] }}
+                            <small class="d-block text-muted">{{ property[2] }}</small>
+                        </a>
+                        {% else %}
+                        <div class="list-group-item">No properties found</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 col-lg-10 main-content">
+        <h1 class="h2 mb-4">Dashboard</h1>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <i class="fas fa-home fa-2x mb-3"></i>
+                        <div class="number">{{ property_count }}</div>
+                        <div class="label">Properties</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card stats-card bg-success text-white">
+                    <div class="card-body">
+                        <i class="fas fa-dollar-sign fa-2x mb-3"></i>
+                        <div class="number">{{ income_count }}</div>
+                        <div class="label">Income Records</div>
+                        <div>{{ income_total|format_currency }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card stats-card bg-danger text-white">
+                    <div class="card-body">
+                        <i class="fas fa-file-invoice-dollar fa-2x mb-3"></i>
+                        <div class="number">{{ expense_count }}</div>
+                        <div class="label">Expense Records</div>
+                        <div>{{ expense_total|format_currency }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card stats-card bg-info text-white">
+                    <div class="card-body">
+                        <i class="fas fa-tools fa-2x mb-3"></i>
+                        <div class="number">{{ work_count }}</div>
+                        <div class="label">Work Records</div>
+                        <div>{{ work_total|format_currency }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Property Locations</h5>
+                <a href="{{ url_for('map_view') }}" class="btn btn-sm btn-primary">View Full Map</a>
+            </div>
+            <div class="card-body p-0">
+                <div id="property-map" class="map-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize property map
+    const map = L.map('property-map').setView([{{ center_lat }}, {{ center_lng }}], 11);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Add property markers
+    const properties = {{ geojson|safe }};
+    
+    L.geoJSON(properties, {
+        pointToLayer: function(feature, latlng) {
+            return L.marker(latlng);
+        },
+        onEachFeature: function(feature, layer) {
+            const popupContent = `
+                <strong>${feature.properties.name}</strong><br>
+                ${feature.properties.address}<br>
+                <a href="${feature.properties.url}" class="btn btn-sm btn-primary mt-2">View Details</a>
+            `;
+            layer.bindPopup(popupContent);
+        }
+    }).addTo(map);
+</script>
+{% endblock %}

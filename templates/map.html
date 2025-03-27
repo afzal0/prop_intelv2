@@ -1,0 +1,138 @@
+{% extends "layout.html" %}
+{% block title %}Property Map - PropIntel{% endblock %}
+
+{% block extra_head %}
+<style>
+    #full-map {
+        height: calc(100vh - 150px);
+        width: 100%;
+        border-radius: 0.375rem;
+        z-index: 1;
+    }
+    
+    .map-sidebar {
+        max-height: calc(100vh - 150px);
+        overflow-y: auto;
+    }
+    
+    .property-item {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .property-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .property-item.active {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Property Map</h1>
+    <a href="{{ url_for('properties') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-list me-1"></i> Property List
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body p-0">
+                <div id="full-map"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card map-sidebar">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Properties</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="property-list">
+                    <!-- Property items will be added dynamically with JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize full map
+    const map = L.map('full-map').setView([{{ center_lat }}, {{ center_lng }}], 11);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Add property markers
+    const properties = {{ geojson|safe }};
+    const propertyList = document.getElementById('property-list');
+    const markers = {};
+    
+    // Create GeoJSON layer with custom markers and popups
+    const propertiesLayer = L.geoJSON(properties, {
+        pointToLayer: function(feature, latlng) {
+            const marker = L.marker(latlng);
+            markers[feature.properties.id] = marker;
+            return marker;
+        },
+        onEachFeature: function(feature, layer) {
+            const property = feature.properties;
+            
+            // Create popup content
+            const popupContent = `
+                <strong>${property.name}</strong><br>
+                ${property.address}<br>
+                <a href="${property.url}" class="btn btn-sm btn-primary mt-2">View Details</a>
+            `;
+            
+            // Bind popup to marker
+            layer.bindPopup(popupContent);
+            
+            // Create sidebar item
+            const listItem = document.createElement('a');
+            listItem.href = '#';
+            listItem.className = 'list-group-item list-group-item-action property-item';
+            listItem.setAttribute('data-property-id', property.id);
+            listItem.innerHTML = `
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">${property.name}</h6>
+                </div>
+                <small>${property.address}</small>
+            `;
+            
+            // Add click event to list item
+            listItem.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Highlight active property
+                document.querySelectorAll('.property-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Fly to marker and open popup
+                const marker = markers[property.id];
+                map.flyTo(marker.getLatLng(), 15);
+                marker.openPopup();
+            });
+            
+            // Add to sidebar
+            propertyList.appendChild(listItem);
+        }
+    }).addTo(map);
+    
+    // Fit map to property bounds if there are properties
+    if (properties.features.length > 0) {
+        map.fitBounds(propertiesLayer.getBounds());
+    }
+</script>
+{% endblock %}

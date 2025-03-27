@@ -1,0 +1,113 @@
+{% extends "layout.html" %}
+{% block title %}Properties - PropIntel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+        <div class="position-sticky">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Search</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('properties') }}" method="get">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Search properties..." name="search" value="{{ search }}">
+                            <button class="btn btn-outline-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Actions</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('new_property') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus-circle me-2"></i> Add New Property
+                        </a>
+                        <a href="{{ url_for('map_view') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-map-marker-alt me-2"></i> View on Map
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 col-lg-10 main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">Properties</h1>
+            <a href="{{ url_for('new_property') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i> Add Property
+            </a>
+        </div>
+        
+        {% if search %}
+        <div class="alert alert-info mb-4">
+            Showing results for: <strong>{{ search }}</strong>
+            <a href="{{ url_for('properties') }}" class="float-end">Clear search</a>
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            {% for property in properties %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 property-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">{{ property.property_name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ property.address }}
+                        </p>
+                        
+                        <div class="row text-center small mb-3">
+                            <div class="col">
+                                <div class="bg-success text-white rounded p-1 mb-1">
+                                    <i class="fas fa-dollar-sign"></i> {{ property.income_count }}
+                                </div>
+                                <div>Income</div>
+                            </div>
+                            <div class="col">
+                                <div class="bg-danger text-white rounded p-1 mb-1">
+                                    <i class="fas fa-file-invoice-dollar"></i> {{ property.expense_count }}
+                                </div>
+                                <div>Expenses</div>
+                            </div>
+                            <div class="col">
+                                <div class="bg-info text-white rounded p-1 mb-1">
+                                    <i class="fas fa-tools"></i> {{ property.work_count }}
+                                </div>
+                                <div>Work</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-end">
+                        <a href="{{ url_for('property_detail', property_id=property.property_id) }}" class="btn btn-primary">
+                            <i class="fas fa-info-circle me-1"></i> Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    {% if search %}
+                    No properties found matching "{{ search }}".
+                    {% else %}
+                    No properties found. Add your first property to get started.
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

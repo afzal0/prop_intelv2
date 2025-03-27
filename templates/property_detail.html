@@ -1,0 +1,428 @@
+{% extends "layout.html" %}
+{% block title %}{{ property.property_name }} - PropIntel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+        <div class="position-sticky">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Property Actions</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('new_work', property_id=property.property_id) }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tools me-2"></i> Add Work Record
+                        </a>
+                        <a href="{{ url_for('new_income', property_id=property.property_id) }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-dollar-sign me-2"></i> Add Income Record
+                        </a>
+                        <a href="{{ url_for('new_expense', property_id=property.property_id) }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-invoice-dollar me-2"></i> Add Expense Record
+                        </a>
+                        <a href="{{ url_for('properties') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Properties
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Financial Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Income:</span>
+                        <strong class="text-success">{{ income_total|format_currency }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Expenses:</span>
+                        <strong class="text-danger">{{ expense_total|format_currency }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Work Cost:</span>
+                        <strong class="text-info">{{ work_total|format_currency }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Net Total:</span>
+                        <strong class="{{ 'text-success' if net_total >= 0 else 'text-danger' }}">
+                            {{ net_total|format_currency }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 col-lg-10 main-content">
+        <!-- Property Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">{{ property.property_name }}</h1>
+            <div>
+                <a href="{{ url_for('properties') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Back
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-plus-circle me-1"></i> Add Record
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('new_work', property_id=property.property_id) }}">
+                                <i class="fas fa-tools me-2"></i> Work Record
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('new_income', property_id=property.property_id) }}">
+                                <i class="fas fa-dollar-sign me-2"></i> Income Record
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('new_expense', property_id=property.property_id) }}">
+                                <i class="fas fa-file-invoice-dollar me-2"></i> Expense Record
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Property Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Property Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i> <strong>Address:</strong> {{ property.address }}
+                        </p>
+                        
+                        {% if property.purchase_date %}
+                        <p class="mb-2">
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i> <strong>Purchase Date:</strong> {{ property.purchase_date|format_date }}
+                        </p>
+                        {% endif %}
+                        
+                        {% if property.purchase_price %}
+                        <p class="mb-2">
+                            <i class="fas fa-tag me-2 text-primary"></i> <strong>Purchase Price:</strong> {{ property.purchase_price|format_currency }}
+                        </p>
+                        {% endif %}
+                        
+                        {% if property.current_value %}
+                        <p class="mb-2">
+                            <i class="fas fa-chart-line me-2 text-primary"></i> <strong>Current Value:</strong> {{ property.current_value|format_currency }}
+                        </p>
+                        {% endif %}
+                        
+                        {% if property.notes %}
+                        <p class="mb-2">
+                            <i class="fas fa-sticky-note me-2 text-primary"></i> <strong>Notes:</strong> {{ property.notes }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <div id="property-map" class="map-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Charts -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Financial Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <canvas id="financeChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for different record types -->
+        <ul class="nav nav-tabs mb-3" id="propertyTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="income-tab" data-bs-toggle="tab" data-bs-target="#income" type="button" role="tab">
+                    <i class="fas fa-dollar-sign me-1"></i> Income ({{ income_records|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses" type="button" role="tab">
+                    <i class="fas fa-file-invoice-dollar me-1"></i> Expenses ({{ expense_records|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="work-tab" data-bs-toggle="tab" data-bs-target="#work" type="button" role="tab">
+                    <i class="fas fa-tools me-1"></i> Work Records ({{ work_records|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab">
+                    <i class="fas fa-clock me-1"></i> Timeline
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="propertyTabContent">
+            <!-- Income Tab -->
+            <div class="tab-pane fade show active" id="income" role="tabpanel" aria-labelledby="income-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Income Records</h5>
+                        <a href="{{ url_for('new_income', property_id=property.property_id) }}" class="btn btn-sm btn-success">
+                            <i class="fas fa-plus-circle me-1"></i> Add Income
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Details</th>
+                                        <th>Amount</th>
+                                        <th>Payment Method</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in income_records %}
+                                    <tr>
+                                        <td>{{ record.income_date|format_date }}</td>
+                                        <td>{{ record.income_details }}</td>
+                                        <td class="text-success">{{ record.income_amount|format_currency }}</td>
+                                        <td>{{ record.payment_method }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3">No income records found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="2" class="text-end">Total:</th>
+                                        <th class="text-success">{{ income_total|format_currency }}</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses Tab -->
+            <div class="tab-pane fade" id="expenses" role="tabpanel" aria-labelledby="expenses-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Expense Records</h5>
+                        <a href="{{ url_for('new_expense', property_id=property.property_id) }}" class="btn btn-sm btn-danger">
+                            <i class="fas fa-plus-circle me-1"></i> Add Expense
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Details</th>
+                                        <th>Amount</th>
+                                        <th>Payment Method</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in expense_records %}
+                                    <tr>
+                                        <td>{{ record.expense_date|format_date }}</td>
+                                        <td>{{ record.expense_details }}</td>
+                                        <td class="text-danger">{{ record.expense_amount|format_currency }}</td>
+                                        <td>{{ record.payment_method }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3">No expense records found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="2" class="text-end">Total:</th>
+                                        <th class="text-danger">{{ expense_total|format_currency }}</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Work Tab -->
+            <div class="tab-pane fade" id="work" role="tabpanel" aria-labelledby="work-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Work Records</h5>
+                        <a href="{{ url_for('new_work', property_id=property.property_id) }}" class="btn btn-sm btn-info">
+                            <i class="fas fa-plus-circle me-1"></i> Add Work Record
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Cost</th>
+                                        <th>Payment Method</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in work_records %}
+                                    <tr>
+                                        <td>{{ record.work_date|format_date }}</td>
+                                        <td>{{ record.work_description }}</td>
+                                        <td class="text-info">{{ record.work_cost|format_currency }}</td>
+                                        <td>{{ record.payment_method }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-3">No work records found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="2" class="text-end">Total:</th>
+                                        <th class="text-info">{{ work_total|format_currency }}</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Tab -->
+            <div class="tab-pane fade" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Property Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            {% for record in work_records %}
+                            <div class="timeline-item">
+                                <div class="timeline-badge">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="timeline-panel">
+                                    <div class="d-flex justify-content-between">
+                                        <h6>{{ record.work_description }}</h6>
+                                        <small class="text-muted">{{ record.work_date|format_date }}</small>
+                                    </div>
+                                    <p class="mb-1">Work/Maintenance</p>
+                                    <div class="text-info">Cost: {{ record.work_cost|format_currency }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize property map
+    const propertyMap = L.map('property-map').setView([{{ map_lat }}, {{ map_lng }}], 14);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(propertyMap);
+    
+    // Add property marker
+    {% if property.latitude and property.longitude %}
+    const marker = L.marker([{{ property.latitude }}, {{ property.longitude }}]).addTo(propertyMap);
+    marker.bindPopup("<strong>{{ property.property_name }}</strong><br>{{ property.address }}").openPopup();
+    {% endif %}
+    
+    // Finance Chart
+    const ctx = document.getElementById('financeChart').getContext('2d');
+    const labels = {{ trend_labels|safe }};
+    const incomeData = {{ income_data|safe }};
+    const expenseData = {{ expense_data|safe }};
+    
+    const financeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                },
+                {
+                    label: 'Expenses',
+                    data: expenseData,
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return ' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ':  + context.raw.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Show active tab based on hash
+    const hash = window.location.hash;
+    if (hash) {
+        const tab = document.querySelector(`button[data-bs-target="${hash}"]`);
+        if (tab) {
+            const tabTrigger = new bootstrap.Tab(tab);
+            tabTrigger.show();
+        }
+    }
+</script>
+{% endblock %}

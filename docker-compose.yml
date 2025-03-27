@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: propintel-app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/propintel
+      - SECRET_KEY=propintel_very_secure_key_change_in_production
+      - FLASK_ENV=production
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - db
+    networks:
+      - propintel-network
+
+  db:
+    image: postgres:15
+    container_name: propintel-db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgrespassword
+      - POSTGRES_DB=propintel
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - propintel-network
+
+networks:
+  propintel-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
